@@ -1,0 +1,298 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* shadcn bridge — mapped to IAA Day Ops palette */
+    --background: 42 39% 94%; /* paper */
+    --foreground: 42 18% 11%; /* ink-900 */
+    --card: 42 56% 96%; /* paper-bright */
+    --card-foreground: 42 18% 11%;
+    --popover: 42 56% 96%;
+    --popover-foreground: 42 18% 11%;
+    --primary: 37 85% 47%; /* amber-500 */
+    --primary-foreground: 42 18% 11%;
+    --secondary: 42 36% 89%; /* paper-dim */
+    --secondary-foreground: 42 18% 11%;
+    --muted: 42 36% 89%;
+    --muted-foreground: 41 9% 39%; /* ink-500 */
+    --accent: 38 79% 89%; /* amber-100 */
+    --accent-foreground: 42 18% 11%;
+    --destructive: 7 53% 50%; /* signal-500 */
+    --destructive-foreground: 44 35% 92%;
+    --border: 41 26% 81%; /* line */
+    --input: 41 26% 81%;
+    --ring: 37 85% 47%;
+    --radius: 6px;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+
+  body {
+    @apply bg-paper text-ink-900 font-sans antialiased;
+    font-size: 17px;
+    line-height: 1.65;
+  }
+
+  ::selection {
+    background: #f9e8cb;
+    color: #211e17;
+  }
+
+  :focus-visible {
+    outline: 2px solid #e09112;
+    outline-offset: 2px;
+  }
+}
+
+/* Lenis smooth scroll (design.md §5.1) */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+@layer components {
+  /* ── Typography scale (design.md §3.2) ─────────────────────────── */
+  .display-1 {
+    @apply font-sans font-black uppercase;
+    font-size: clamp(44px, 7.5vw, 88px);
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+  }
+  .display-2 {
+    @apply font-sans font-extrabold;
+    font-size: clamp(34px, 5vw, 56px);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .h1 {
+    @apply font-sans font-extrabold;
+    font-size: clamp(30px, 4vw, 44px);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+  .h2 {
+    @apply font-sans font-extrabold;
+    font-size: clamp(26px, 3vw, 34px);
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+  }
+  .h3 {
+    @apply font-sans font-bold;
+    font-size: 24px;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+  .h4 {
+    @apply font-sans font-bold;
+    font-size: 19px;
+    line-height: 1.3;
+  }
+  .body {
+    @apply font-sans font-normal;
+    font-size: 17px;
+    line-height: 1.65;
+    max-width: 68ch;
+  }
+  .body-strong {
+    @apply font-sans font-semibold;
+    font-size: 17px;
+    line-height: 1.6;
+  }
+  .small {
+    @apply font-sans font-normal;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .label {
+    @apply font-mono font-semibold uppercase;
+    font-size: 12px;
+    line-height: 1;
+    letter-spacing: 0.14em;
+  }
+  .data {
+    @apply font-mono font-medium;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .prompt-text {
+    @apply font-mono font-normal;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  .editorial {
+    @apply font-editorial italic font-medium;
+    font-size: clamp(20px, 2.4vw, 27px);
+    line-height: 1.4;
+  }
+
+  /* ── Texture (design.md §4): site-wide grain, multiply day / screen night ── */
+  .grain-overlay {
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background-image: url('/texture-grain.webp');
+    background-repeat: repeat;
+    background-size: 600px 600px;
+    mix-blend-mode: multiply;
+    opacity: 0.05;
+  }
+  .grain-night {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    background-image: url('/texture-grain.webp');
+    background-repeat: repeat;
+    background-size: 600px 600px;
+    mix-blend-mode: screen;
+    opacity: 0.05;
+  }
+
+  /* ── Taxiway stripe (signage underline, design.md §3.3) ── */
+  .taxiway-stripe {
+    background-image: repeating-linear-gradient(
+      to right,
+      #e09112 0,
+      #e09112 12px,
+      transparent 12px,
+      transparent 20px
+    );
+    background-size: 100% 2px;
+    background-repeat: no-repeat;
+    background-position: left bottom;
+    padding-bottom: 8px;
+  }
+
+  /* ── Buttons (shared vocabulary; page agents should reuse) ── */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-[2px] bg-amber-500 px-6 py-3 font-sans text-[17px] font-bold text-ink-900 transition-all duration-200;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.35),
+      0 1px 2px rgba(33, 30, 23, 0.06);
+  }
+  .btn-primary:hover {
+    @apply bg-amber-400 -translate-y-0.5;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.35),
+      0 8px 24px rgba(33, 30, 23, 0.1);
+  }
+  .btn-primary:active {
+    @apply translate-y-0;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-[2px] border-2 border-ink-900 bg-transparent px-6 py-3 font-sans text-[17px] font-bold text-ink-900 transition-all duration-200;
+  }
+  .btn-ghost:hover {
+    @apply -translate-y-0.5 bg-paper-bright;
+    box-shadow: 0 8px 24px rgba(33, 30, 23, 0.1);
+  }
+  .btn-beacon {
+    position: relative;
+  }
+  .btn-beacon::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border: 2px solid #e09112;
+    border-radius: 4px;
+    animation: beacon-pulse 3s ease-out infinite;
+    pointer-events: none;
+  }
+}
+
+@layer utilities {
+  .perspective-600 {
+    perspective: 600px;
+  }
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+
+  /* AA guard: amber-600 text links may darken or underline on hover — never
+     move to a lighter amber (amber-400/500 text on paper fails 4.5:1). Kept in
+     the utilities layer so it outranks same-layer hover color utilities. */
+  a.text-amber-600:hover,
+  button.text-amber-600:hover {
+    @apply text-ink-900;
+  }
+}
+
+@keyframes wing-shine {
+  0% {
+    transform: translateX(-30px) skewX(-18deg);
+  }
+  35% {
+    transform: translateX(90px) skewX(-18deg);
+  }
+  100% {
+    transform: translateX(90px) skewX(-18deg);
+  }
+}
+
+.wing-shine {
+  animation: wing-shine 3.8s ease-in-out infinite;
+}
+
+/* S1 hero: dashed plane trail loops across the frame corner (2.4s draw + 1.6s pause) */
+@keyframes trail-draw {
+  0% {
+    stroke-dashoffset: 100;
+  }
+  60%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes trail-plane {
+  0%,
+  8% {
+    opacity: 0;
+  }
+  20%,
+  62% {
+    opacity: 1;
+  }
+  78%,
+  100% {
+    opacity: 0;
+  }
+}
+.trail-loop-path {
+  animation: trail-draw 4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.trail-loop-plane {
+  animation: trail-plane 4s linear infinite;
+}
+
+@keyframes beacon-pulse {
+  0% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-beacon::after {
+    animation: none;
+    opacity: 0;
+  }
+}

@@ -1,0 +1,130 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="anat-title anat-desc">
+  <title id="anat-title">Anatomy of a prompt — exploded cargo diagram</title>
+  <desc id="anat-desc">A flat exploded diagram of a prompt as stacked cargo containers on a luggage cart: INSTRUCTION (amber), CONTEXT (green), INPUT (slate), OUTPUT FORMAT (ink), with red-outline ROLE and EXAMPLES tags pinned on, and a small plane climbing above.</desc>
+
+  <!-- cream field -->
+  <rect width="1200" height="900" fill="#F5F1E8"/>
+
+  <!-- faint airfield grid -->
+  <g stroke="#EDE7D9" stroke-width="1">
+    <path d="M0 150 H1200 M0 300 H1200 M0 450 H1200 M0 600 H1200 M0 750 H1200"/>
+    <path d="M150 0 V900 M300 0 V900 M450 0 V900 M600 0 V900 M750 0 V900 M900 0 V900 M1050 0 V900"/>
+  </g>
+
+  <!-- corner plate labels -->
+  <text x="48" y="64" font-family="'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="600" letter-spacing="2.5" fill="#A9A294">IND · CARGO LOAD 06:00</text>
+  <text x="1152" y="852" text-anchor="end" font-family="'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="600" letter-spacing="2.5" fill="#A9A294">PROMPT ANATOMY — SIX PARTS, ONE DEPARTURE</text>
+
+  <!-- climbing plane + dashed trail -->
+  <path d="M 690 640 C 820 585, 905 430, 972 226" fill="none" stroke="#A9A294" stroke-width="2" stroke-dasharray="8 10" stroke-linecap="round"/>
+  <g transform="translate(982 178) rotate(-32)">
+    <path d="M 0 0 L 74 22 L 0 44 L 14 22 Z" fill="#F5F1E8" stroke="#211E17" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M 14 22 L 74 22" stroke="#211E17" stroke-width="2"/>
+    <path d="M 30 22 L 18 36" stroke="#211E17" stroke-width="2"/>
+  </g>
+
+  <!-- ═══ exploded stack connectors (behind containers) ═══ -->
+  <g stroke="#6E685B" stroke-width="2" stroke-dasharray="2 7" stroke-linecap="round">
+    <line x1="560" y1="700" x2="560" y2="664"/>
+    <line x1="560" y1="596" x2="560" y2="560"/>
+    <line x1="560" y1="500" x2="560" y2="464"/>
+    <line x1="560" y1="404" x2="560" y2="368"/>
+  </g>
+
+  <!-- ═══ luggage cart ═══ -->
+  <g>
+    <!-- handle -->
+    <rect x="352" y="640" width="6" height="72" fill="#211E17"/>
+    <rect x="330" y="634" width="30" height="8" rx="2" fill="#211E17"/>
+    <!-- bed -->
+    <rect x="352" y="706" width="420" height="14" rx="3" fill="#211E17"/>
+    <!-- wheels -->
+    <circle cx="424" cy="744" r="17" fill="#FBF8F1" stroke="#211E17" stroke-width="3"/>
+    <circle cx="424" cy="744" r="4" fill="#211E17"/>
+    <circle cx="700" cy="744" r="17" fill="#FBF8F1" stroke="#211E17" stroke-width="3"/>
+    <circle cx="700" cy="744" r="4" fill="#211E17"/>
+    <!-- taxiway centerline under cart -->
+    <path d="M 96 778 H 1104" stroke="#E09112" stroke-width="2" stroke-dasharray="14 12" opacity="0.7"/>
+  </g>
+
+  <!-- ═══ cargo containers (bottom → top: INPUT, CONTEXT, INSTRUCTION, OUTPUT FORMAT) ═══ -->
+  <!-- INPUT — slate -->
+  <g>
+    <rect x="345" y="596" width="430" height="68" rx="3" fill="#5C7A89" stroke="#211E17" stroke-width="2"/>
+    <circle cx="361" cy="612" r="3" fill="#211E17" opacity="0.3"/>
+    <circle cx="759" cy="612" r="3" fill="#211E17" opacity="0.3"/>
+    <!-- document glyph -->
+    <g transform="translate(372 612)">
+      <rect x="0" y="0" width="26" height="34" rx="2" fill="none" stroke="#F5F1E8" stroke-width="2"/>
+      <path d="M6 9 H20 M6 16 H20 M6 23 H14" stroke="#F5F1E8" stroke-width="2" stroke-linecap="round"/>
+    </g>
+    <text x="578" y="639" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="24" font-weight="600" letter-spacing="4" fill="#F5F1E8">INPUT</text>
+  </g>
+
+  <!-- CONTEXT — green -->
+  <g>
+    <rect x="375" y="500" width="400" height="64" rx="3" fill="#3F7D5C" stroke="#211E17" stroke-width="2"/>
+    <circle cx="391" cy="516" r="3" fill="#211E17" opacity="0.3"/>
+    <circle cx="759" cy="516" r="3" fill="#211E17" opacity="0.3"/>
+    <text x="575" y="541" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="24" font-weight="600" letter-spacing="4" fill="#F5F1E8">CONTEXT</text>
+  </g>
+
+  <!-- INSTRUCTION — amber -->
+  <g>
+    <rect x="405" y="404" width="370" height="64" rx="3" fill="#E09112" stroke="#211E17" stroke-width="2"/>
+    <circle cx="421" cy="420" r="3" fill="#211E17" opacity="0.35"/>
+    <circle cx="759" cy="420" r="3" fill="#211E17" opacity="0.35"/>
+    <text x="590" y="445" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="24" font-weight="600" letter-spacing="4" fill="#211E17">INSTRUCTION</text>
+  </g>
+
+  <!-- OUTPUT FORMAT — ink -->
+  <g>
+    <rect x="435" y="308" width="340" height="64" rx="3" fill="#211E17" stroke="#211E17" stroke-width="2"/>
+    <circle cx="451" cy="324" r="3" fill="#F5F1E8" opacity="0.35"/>
+    <circle cx="759" cy="324" r="3" fill="#F5F1E8" opacity="0.35"/>
+    <text x="605" y="349" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="22" font-weight="600" letter-spacing="3" fill="#F5F1E8">OUTPUT FORMAT</text>
+    <!-- mono format tag -->
+    <g transform="translate(791 322)">
+      <rect x="0" y="0" width="212" height="36" rx="3" fill="#FBF8F1" stroke="#211E17" stroke-width="2"/>
+      <text x="106" y="24" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" font-weight="600" letter-spacing="1" fill="#211E17">5 BULLETS · ≤120 WORDS</text>
+    </g>
+  </g>
+
+  <!-- ═══ red-outline extras, pinned ═══ -->
+  <g transform="translate(856 402) rotate(-6)">
+    <rect x="0" y="0" width="120" height="44" rx="3" fill="#FBF8F1" stroke="#C24A3B" stroke-width="2"/>
+    <text x="60" y="29" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="600" letter-spacing="3" fill="#A23B2E">ROLE</text>
+  </g>
+  <g transform="translate(846 462) rotate(4)">
+    <rect x="0" y="0" width="178" height="44" rx="3" fill="#FBF8F1" stroke="#C24A3B" stroke-width="2"/>
+    <text x="89" y="29" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="600" letter-spacing="3" fill="#A23B2E">EXAMPLES</text>
+  </g>
+  <path d="M 846 430 C 820 428, 800 424, 778 420" fill="none" stroke="#C24A3B" stroke-width="1.5"/>
+  <path d="M 846 486 C 822 478, 800 462, 778 446" fill="none" stroke="#C24A3B" stroke-width="1.5"/>
+
+  <!-- ═══ exploded annotations: thin connector lines + mono notes ═══ -->
+  <g font-family="'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="500" letter-spacing="1.5" fill="#6E685B">
+    <!-- OUTPUT FORMAT note -->
+    <path d="M 312 340 H 429" stroke="#A9A294" stroke-width="1.5" fill="none"/>
+    <circle cx="429" cy="340" r="3.5" fill="#A9A294"/>
+    <text x="306" y="345" text-anchor="end">SHAPE + LENGTH, STATED</text>
+    <!-- INSTRUCTION note -->
+    <path d="M 252 436 H 399" stroke="#A9A294" stroke-width="1.5" fill="none"/>
+    <circle cx="399" cy="436" r="3.5" fill="#A9A294"/>
+    <text x="246" y="441" text-anchor="end">ONE TASK, ONE VERB</text>
+    <!-- CONTEXT note -->
+    <path d="M 282 532 H 369" stroke="#A9A294" stroke-width="1.5" fill="none"/>
+    <circle cx="369" cy="532" r="3.5" fill="#A9A294"/>
+    <text x="276" y="537" text-anchor="end">WHO'S ASKING, AND WHY</text>
+    <!-- INPUT note -->
+    <path d="M 222 630 H 339" stroke="#A9A294" stroke-width="1.5" fill="none"/>
+    <circle cx="339" cy="630" r="3.5" fill="#A9A294"/>
+    <text x="216" y="635" text-anchor="end">THE MATERIAL, FENCED</text>
+  </g>
+  <!-- extras note -->
+  <g font-family="'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="500" letter-spacing="1.5" fill="#6E685B">
+    <path d="M 928 380 V 366 H 962" stroke="#A9A294" stroke-width="1.5" fill="none"/>
+    <circle cx="928" cy="382" r="3.5" fill="#A9A294"/>
+    <text x="968" y="371">OPTIONAL EXTRAS</text>
+  </g>
+</svg>

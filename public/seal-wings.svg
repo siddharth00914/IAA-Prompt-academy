@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" fill="none" role="img" aria-label="IAA Prompt Academy winged seal">
+  <!-- Certificate seal (design.md §9): circular rope border, wings flanking a
+       control tower, star above, banner ribbon beneath (text set in code).
+       1.5–2px ink line art, single amber accent fill on the star. -->
+  <g stroke="#211E17" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round">
+    <!-- circular rope border -->
+    <circle cx="400" cy="400" r="372"/>
+    <circle cx="400" cy="400" r="344" stroke-width="16" stroke-dasharray="14 10"/>
+    <circle cx="400" cy="400" r="322"/>
+
+    <!-- star above the tower — the single amber accent -->
+    <path
+      d="M400 218 L410.6 244.4 L438.8 246.2 L417.2 264.4 L424 291.8 L400 276.6 L376 291.8 L382.8 264.4 L361.2 246.2 L389.4 244.4 Z"
+      fill="#E09112"/>
+
+    <!-- antenna -->
+    <path d="M400 292 L400 378"/>
+    <path d="M390 306 L410 306"/>
+
+    <!-- control tower cab -->
+    <path d="M356 380 L444 380 L436 366 L364 366 Z"/>
+    <rect x="362" y="380" width="76" height="46"/>
+    <path d="M384 388 L384 418"/>
+    <path d="M400 388 L400 418"/>
+    <path d="M416 388 L416 418"/>
+    <path d="M356 426 L444 426"/>
+
+    <!-- tower shaft -->
+    <path d="M386 426 L372 566"/>
+    <path d="M414 426 L428 566"/>
+    <path d="M382 466 L418 466"/>
+    <path d="M378 506 L422 506"/>
+    <path d="M374 546 L426 546"/>
+    <!-- tower base -->
+    <path d="M356 566 L444 566"/>
+    <path d="M340 582 L460 582"/>
+
+    <!-- wings: left -->
+    <path d="M362 392 C 296 366, 232 348, 168 344"/>
+    <path d="M362 408 C 300 392, 240 382, 178 382"/>
+    <path d="M362 424 C 306 418, 250 416, 194 422"/>
+    <path d="M168 344 C 172 356, 174 368, 178 382"/>
+    <path d="M178 382 C 182 396, 187 410, 194 422"/>
+    <!-- wing feather ticks, left -->
+    <path d="M300 372 L306 384"/>
+    <path d="M252 360 L258 372"/>
+    <path d="M212 350 L218 362"/>
+    <path d="M300 398 L304 410"/>
+    <path d="M252 388 L256 400"/>
+    <path d="M212 384 L216 396"/>
+
+    <!-- wings: right (mirror) -->
+    <path d="M438 392 C 504 366, 568 348, 632 344"/>
+    <path d="M438 408 C 500 392, 560 382, 622 382"/>
+    <path d="M438 424 C 494 418, 550 416, 606 422"/>
+    <path d="M632 344 C 628 356, 626 368, 622 382"/>
+    <path d="M622 382 C 618 396, 613 410, 606 422"/>
+    <!-- wing feather ticks, right -->
+    <path d="M500 372 L494 384"/>
+    <path d="M548 360 L542 372"/>
+    <path d="M588 350 L582 362"/>
+    <path d="M500 398 L496 410"/>
+    <path d="M548 388 L544 400"/>
+    <path d="M588 384 L584 396"/>
+
+    <!-- banner ribbon beneath (text set in code) -->
+    <path d="M232 618 L568 618 L568 676 L232 676 Z"/>
+    <path d="M232 618 L186 606 L204 647 L186 688 L232 676"/>
+    <path d="M568 618 L614 606 L596 647 L614 688 L568 676"/>
+    <path d="M232 618 L246 632 L246 662 L232 676"/>
+    <path d="M568 618 L554 632 L554 662 L568 676"/>
+  </g>
+</svg>

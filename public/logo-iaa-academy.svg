@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" fill="none" role="img" aria-label="IAA Prompt Academy">
+  <!-- Paper plane (single-weight ink strokes) -->
+  <path
+    d="M16 46 L80 24 L54 72 L45 55 Z"
+    stroke="#211E17"
+    stroke-width="3.5"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M45 55 L80 24"
+    stroke="#211E17"
+    stroke-width="3.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <!-- Trailing dashed line: loops and resolves into a text cursor -->
+  <path
+    d="M20 54 C 8 62 9 78 25 80 C 39 82 47 72 39 63 C 33 57 23 60 23 68 C 23 74 28 77 33 75 C 42 71 48 76 50 79 C 52 81 54 82 56 82"
+    stroke="#211E17"
+    stroke-width="3.5"
+    stroke-linecap="round"
+    stroke-dasharray="7 6"
+  />
+  <!-- Text cursor the trail becomes -->
+  <path
+    d="M58 66 L58 88"
+    stroke="#211E17"
+    stroke-width="3.5"
+    stroke-linecap="round"
+  />
+  <!-- Single amber accent dash: the first dash of the trail -->
+  <path
+    d="M20 54 C 16 56 13 59 11.5 62.5"
+    stroke="#E09112"
+    stroke-width="3.5"
+    stroke-linecap="round"
+  />
+</svg>
