@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import Navbar, { NAV_HEIGHT } from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import ProgressHydrator from '@/components/ProgressHydrator';
 import { ToastProvider } from '@/components/Toast';
 import { initSmoothScroll, getLenis } from '@/lib/smooth-scroll';
 
@@ -32,6 +33,7 @@ export default function Layout() {
 
   return (
     <ToastProvider>
+      <ProgressHydrator />
       <div className="grain-overlay" aria-hidden />
       <Navbar />
       <main style={{ paddingTop: NAV_HEIGHT }} className="min-h-[100dvh]">

@@ -85,6 +85,14 @@ export const WINGS = {
 export type WingId = (typeof WINGS)[keyof typeof WINGS];
 
 const STORAGE_KEY = 'iaa-prompt-academy:progress:v1';
+/** Stamps which authenticated user may import the current legacy blob. */
+const LEGACY_CLAIM_KEY = 'iaa-prompt-academy:legacy-claim:v1';
+
+export type ProgressSyncStatus = 'anonymous' | 'loading' | 'ready' | 'error';
+/** Server PUT pipeline status (authenticated learners only). */
+export type ProgressSaveStatus = 'idle' | 'scheduled' | 'saving' | 'error';
+/** One-time localStorage → server import gate (runs before ready/checkIn). */
+export type LegacyImportStatus = 'none' | 'pending' | 'error' | 'done';
 
 function emptyGate(): GateProgress {
   return { legs: {}, checkScore: null, checkAttempts: 0, mastered: false };
@@ -103,13 +111,55 @@ function emptyProgress(): Progress {
   };
 }
 
+function normalizeProgress(progress: Progress): Progress {
+  return { ...emptyProgress(), ...progress, v: 1 };
+}
+
+/** Stable JSON for dirty checks (same content ⇒ same string). */
+export function serializeProgress(progress: Progress): string {
+  return JSON.stringify(normalizeProgress(progress));
+}
+
+/** Stable snapshot while server-backed and `state` is still null (loading). */
+const SERVER_LOADING_SNAPSHOT: Progress = Object.freeze(emptyProgress()) as Progress;
+
 // ── Store internals ──────────────────────────────────────────────────────────
 
 let state: Progress | null = null;
+/** When true, in-memory server progress is active; localStorage is not read or written. */
+let serverBacked = false;
+let revision = 0;
+let syncStatus: ProgressSyncStatus = 'anonymous';
+let saveStatus: ProgressSaveStatus = 'idle';
+let legacyImportStatus: LegacyImportStatus = 'none';
+/** JSON of the last state known to match the server (hydration or successful PUT). */
+let lastSyncedJson: string | null = null;
+let hydratedUserId: string | null = null;
 const listeners = new Set<() => void>();
+
+type ServerSaveHooks = {
+  schedule: () => void;
+  cancel: () => void;
+};
+let serverSaveHooks: ServerSaveHooks | null = null;
+
+function notify(): void {
+  listeners.forEach((l) => l());
+}
+
+function setSaveStatus(next: ProgressSaveStatus): void {
+  if (saveStatus === next) return;
+  saveStatus = next;
+  notify();
+}
 
 function load(): Progress {
   if (state) return state;
+  // Authenticated hydration path: never seed from localStorage or stash an
+  // empty default into `state` (that would replace server progress).
+  if (serverBacked) {
+    return SERVER_LOADING_SNAPSHOT;
+  }
   if (typeof window === 'undefined') return emptyProgress();
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -126,6 +176,7 @@ function load(): Progress {
 }
 
 function persist(): void {
+  if (serverBacked) return; // leave existing localStorage untouched while server-backed
   if (typeof window === 'undefined' || !state) return;
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -134,11 +185,26 @@ function persist(): void {
   }
 }
 
+function isDirtyAgainstServer(): boolean {
+  if (!serverBacked || syncStatus !== 'ready' || !state || lastSyncedJson === null) {
+    return false;
+  }
+  return serializeProgress(state) !== lastSyncedJson;
+}
+
+function requestServerSave(): void {
+  if (!isDirtyAgainstServer()) return;
+  setSaveStatus('scheduled');
+  serverSaveHooks?.schedule();
+}
+
 function emit(): void {
   // Re-wrap so useSyncExternalStore subscribers see a new snapshot reference.
   if (state) state = { ...state };
   persist();
-  listeners.forEach((l) => l());
+  notify();
+  // Authenticated mutations only — never during hydration or while signed out.
+  requestServerSave();
 }
 
 function subscribe(listener: () => void): () => void {
@@ -150,15 +216,284 @@ function getSnapshot(): Progress {
   return load();
 }
 
+function getSyncSnapshot(): ProgressSyncStatus {
+  return syncStatus;
+}
+
+function getRevisionSnapshot(): number {
+  return revision;
+}
+
+function getSaveSnapshot(): ProgressSaveStatus {
+  return saveStatus;
+}
+
+function getLegacyImportSnapshot(): LegacyImportStatus {
+  return legacyImportStatus;
+}
+
 /** React hook — subscribe to the full progress object. Pair with the action
  * functions below, e.g. `const progress = useProgress(); recordLegComplete(...)`. */
 export function useProgress(): Progress {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
+export function useProgressSyncStatus(): ProgressSyncStatus {
+  return useSyncExternalStore(subscribe, getSyncSnapshot, getSyncSnapshot);
+}
+
+export function useProgressRevision(): number {
+  return useSyncExternalStore(subscribe, getRevisionSnapshot, getRevisionSnapshot);
+}
+
+export function useProgressSaveStatus(): ProgressSaveStatus {
+  return useSyncExternalStore(subscribe, getSaveSnapshot, getSaveSnapshot);
+}
+
+export function useLegacyImportStatus(): LegacyImportStatus {
+  return useSyncExternalStore(subscribe, getLegacyImportSnapshot, getLegacyImportSnapshot);
+}
+
 /** Non-React read access. */
 export function getProgress(): Progress {
   return load();
+}
+
+export function getProgressRevision(): number {
+  return revision;
+}
+
+export function getProgressSyncStatus(): ProgressSyncStatus {
+  return syncStatus;
+}
+
+export function getProgressSaveStatus(): ProgressSaveStatus {
+  return saveStatus;
+}
+
+export function getLegacyImportStatus(): LegacyImportStatus {
+  return legacyImportStatus;
+}
+
+export function getHydratedUserId(): string | null {
+  return hydratedUserId;
+}
+
+function progressHasContent(p: Progress): boolean {
+  return (
+    p.miles > 0 ||
+    Object.keys(p.gates).length > 0 ||
+    Object.keys(p.lab).length > 0 ||
+    p.pledgeSigned ||
+    p.certifiedAt !== null
+  );
+}
+
+/**
+ * Read legacy localStorage progress without touching the in-memory store.
+ * Returns null when missing, corrupt, empty, or not importable.
+ */
+export function peekLegacyLocalProgress(): Progress | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Progress;
+    if (parsed?.v !== 1 || typeof parsed.miles !== 'number') return null;
+    const normalized = normalizeProgress(parsed);
+    if (!progressHasContent(normalized)) return null;
+    return normalized;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * True when this browser's legacy blob may be imported for `userId`.
+ * Prevents importing the same device progress into a different account.
+ */
+export function canImportLegacyForUser(userId: string): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const claim = window.localStorage.getItem(LEGACY_CLAIM_KEY);
+    if (!claim) return true;
+    return claim === userId;
+  } catch {
+    return false;
+  }
+}
+
+export function claimLegacyImportForUser(userId: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const existing = window.localStorage.getItem(LEGACY_CLAIM_KEY);
+    if (!existing) {
+      window.localStorage.setItem(LEGACY_CLAIM_KEY, userId);
+    }
+  } catch {
+    // storage blocked — import may still proceed for this session
+  }
+}
+
+/** Remove legacy progress only after the server confirms successful processing. */
+export function clearLegacyLocalProgress(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(LEGACY_CLAIM_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+export function markLegacyImportPending(): void {
+  if (legacyImportStatus === 'pending') return;
+  legacyImportStatus = 'pending';
+  notify();
+}
+
+export function markLegacyImportDone(): void {
+  if (legacyImportStatus === 'done') return;
+  legacyImportStatus = 'done';
+  notify();
+}
+
+export function markLegacyImportError(): void {
+  legacyImportStatus = 'error';
+  notify();
+}
+
+/** Wire debounced PUT scheduling from progress-api (avoids a circular import). */
+export function registerServerSaveHooks(hooks: ServerSaveHooks | null): void {
+  serverSaveHooks = hooks;
+}
+
+/** Snapshot for an in-flight PUT (complete state + expected revision). */
+export function getServerSavePayload(): { state: Progress; expectedRevision: number } | null {
+  if (!serverBacked || syncStatus !== 'ready' || !state || lastSyncedJson === null) {
+    return null;
+  }
+  if (serializeProgress(state) === lastSyncedJson) return null;
+  return {
+    state: normalizeProgress(state),
+    expectedRevision: revision,
+  };
+}
+
+export function markProgressSaveSaving(): void {
+  if (!serverBacked || syncStatus !== 'ready') return;
+  setSaveStatus('saving');
+}
+
+export function markProgressSaveError(): void {
+  if (!serverBacked || syncStatus !== 'ready') return;
+  setSaveStatus('error');
+}
+
+export function markProgressSaveIdle(): void {
+  if (saveStatus === 'idle') return;
+  saveStatus = 'idle';
+  notify();
+}
+
+/**
+ * Apply server state after a successful PUT without scheduling another save.
+ * Keeps newer local mutations that happened during the request; only bumps
+ * revision + lastSynced baseline from what the server now holds.
+ */
+export function applySuccessfulServerSave(
+  sent: Progress,
+  returned: Progress,
+  nextRevision: number,
+): void {
+  if (!serverBacked) return;
+  revision = nextRevision;
+  lastSyncedJson = serializeProgress(returned);
+  const sentJson = serializeProgress(sent);
+  // If the learner didn't mutate during the flight, take the server copy
+  // (e.g. ledger capping). Otherwise keep the newer in-memory state.
+  if (!state || serializeProgress(state) === sentJson) {
+    state = normalizeProgress(returned);
+  }
+  saveStatus = isDirtyAgainstServer() ? 'scheduled' : 'idle';
+  notify();
+  if (saveStatus === 'scheduled') {
+    serverSaveHooks?.schedule();
+  }
+}
+
+/**
+ * Start loading server progress for a signed-in user. Clears in-memory state
+ * without touching localStorage.
+ */
+export function beginServerHydration(userId: string): void {
+  if (
+    hydratedUserId === userId &&
+    syncStatus === 'ready' &&
+    state &&
+    legacyImportStatus === 'done'
+  ) {
+    return;
+  }
+  serverSaveHooks?.cancel();
+  hydratedUserId = userId;
+  state = null;
+  revision = 0;
+  lastSyncedJson = null;
+  serverBacked = true;
+  syncStatus = 'loading';
+  saveStatus = 'idle';
+  legacyImportStatus = 'pending';
+  notify();
+}
+
+/** Apply GET /api/progress as the active in-memory store (no localStorage write). */
+export function hydrateFromServer(progress: Progress, nextRevision: number): void {
+  state = normalizeProgress(progress);
+  revision = nextRevision;
+  lastSyncedJson = serializeProgress(state);
+  serverBacked = true;
+  syncStatus = 'ready';
+  saveStatus = 'idle';
+  // legacyImportStatus is set by the hydrator (done/error) around this call
+  notify();
+}
+
+/**
+ * Replace in-memory progress with the server's copy (409 recovery).
+ * Does not schedule a save — prevents overwrite loops.
+ */
+export function acceptServerProgress(progress: Progress, nextRevision: number): void {
+  if (!serverBacked) return;
+  serverSaveHooks?.cancel();
+  state = normalizeProgress(progress);
+  revision = nextRevision;
+  lastSyncedJson = serializeProgress(state);
+  syncStatus = 'ready';
+  saveStatus = 'idle';
+  notify();
+}
+
+export function failServerHydration(): void {
+  serverSaveHooks?.cancel();
+  syncStatus = 'error';
+  saveStatus = 'idle';
+  legacyImportStatus = 'none';
+  notify();
+}
+
+/** Drop the previous learner’s in-memory progress after sign-out. localStorage stays. */
+export function clearProgressMemory(): void {
+  serverSaveHooks?.cancel();
+  state = null;
+  revision = 0;
+  lastSyncedJson = null;
+  serverBacked = false;
+  syncStatus = 'anonymous';
+  saveStatus = 'idle';
+  legacyImportStatus = 'none';
+  hydratedUserId = null;
+  notify();
 }
 
 // ── Internal helpers ─────────────────────────────────────────────────────────
@@ -282,14 +617,7 @@ export function hasWing(wingId: string): boolean {
 
 /** True once the learner has done anything at all (drives "Resume" CTAs). */
 export function hasAnyProgress(): boolean {
-  const p = getProgress();
-  return (
-    p.miles > 0 ||
-    Object.keys(p.gates).length > 0 ||
-    Object.keys(p.lab).length > 0 ||
-    p.pledgeSigned ||
-    p.certifiedAt !== null
-  );
+  return progressHasContent(getProgress());
 }
 
 /** Deterministic certificate ID from the completion timestamp. */

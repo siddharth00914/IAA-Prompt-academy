@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import type { ReactNode } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router';
 import Layout from '@/components/Layout';
+import RequireAuth from '@/components/RequireAuth';
 import TaxiwayLoader from '@/components/TaxiwayLoader';
 
 // Route pages are code-split: the initial chunk carries only the router,
@@ -15,6 +16,7 @@ const Lab = lazy(() => import('@/pages/Lab'));
 const Safety = lazy(() => import('@/pages/Safety'));
 const Arrival = lazy(() => import('@/pages/Arrival'));
 const Manual = lazy(() => import('@/pages/Manual'));
+const Login = lazy(() => import('@/pages/Login'));
 const Stub = lazy(() => import('@/pages/Stub'));
 
 /** Per-route Suspense so the eager chrome never flashes during page loads. */
@@ -35,6 +37,7 @@ function Page({ children }: { children: ReactNode }) {
 /**
  * Routing contract: Layout renders <Outlet/> (nested-route pattern).
  * Layout owns the fixed-navbar offset — pages must not add their own.
+ * Public: / and /login. Learner routes sit behind RequireAuth.
  */
 export default function App() {
   return (
@@ -50,69 +53,79 @@ export default function App() {
             }
           />
           <Route
-            path="journey"
+            path="login"
             element={
               <Page>
-                <Journey />
+                <Login />
               </Page>
             }
           />
-          <Route
-            path="gates/:gateId"
-            element={
-              <Page>
-                <GateOverview />
-              </Page>
-            }
-          />
-          <Route
-            path="gates/:gateId/legs/:legId"
-            element={
-              <Page>
-                <Lesson />
-              </Page>
-            }
-          />
-          <Route
-            path="gates/:gateId/check"
-            element={
-              <Page>
-                <GateCheck />
-              </Page>
-            }
-          />
-          <Route
-            path="lab"
-            element={
-              <Page>
-                <Lab />
-              </Page>
-            }
-          />
-          <Route
-            path="safety"
-            element={
-              <Page>
-                <Safety />
-              </Page>
-            }
-          />
-          <Route
-            path="arrival"
-            element={
-              <Page>
-                <Arrival />
-              </Page>
-            }
-          />
-          <Route
-            path="manual"
-            element={
-              <Page>
-                <Manual />
-              </Page>
-            }
-          />
+          <Route element={<RequireAuth />}>
+            <Route
+              path="journey"
+              element={
+                <Page>
+                  <Journey />
+                </Page>
+              }
+            />
+            <Route
+              path="gates/:gateId"
+              element={
+                <Page>
+                  <GateOverview />
+                </Page>
+              }
+            />
+            <Route
+              path="gates/:gateId/legs/:legId"
+              element={
+                <Page>
+                  <Lesson />
+                </Page>
+              }
+            />
+            <Route
+              path="gates/:gateId/check"
+              element={
+                <Page>
+                  <GateCheck />
+                </Page>
+              }
+            />
+            <Route
+              path="lab"
+              element={
+                <Page>
+                  <Lab />
+                </Page>
+              }
+            />
+            <Route
+              path="safety"
+              element={
+                <Page>
+                  <Safety />
+                </Page>
+              }
+            />
+            <Route
+              path="arrival"
+              element={
+                <Page>
+                  <Arrival />
+                </Page>
+              }
+            />
+            <Route
+              path="manual"
+              element={
+                <Page>
+                  <Manual />
+                </Page>
+              }
+            />
+          </Route>
           <Route
             path="*"
             element={

@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, Lock, Menu, User, X } from 'lucide-react';
+import { ChevronDown, Lock, Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useProgress, isGateUnlocked } from '@/lib/progress';
+import AuthControls from '@/components/AuthControls';
 import SplitFlap from '@/components/SplitFlap';
 
 export const NAV_HEIGHT = 64; // px — Layout owns the matching top offset
@@ -227,13 +228,7 @@ export default function Navbar() {
                 {progress.miles} MILES
               </span>
             </Link>
-            <span
-              className="hidden h-8 w-8 items-center justify-center rounded-full border border-line bg-paper-dim sm:flex"
-              aria-label="IAA staff member"
-              title="IAA staff member"
-            >
-              <User className="h-4 w-4 text-ink-500" strokeWidth={1.5} />
-            </span>
+            <AuthControls variant="desktop" />
             <button
               ref={menuButtonRef}
               type="button"
@@ -315,7 +310,8 @@ export default function Navbar() {
               ))}
             </nav>
             <div className="relative border-t border-tarmac-700 px-6 py-4">
-              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-fog-500">
+              <AuthControls variant="mobile" onNavigate={() => setMobileOpen(false)} />
+              <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.14em] text-fog-500">
                 {progress.miles} MILES · PRESENTED BY WINTHROP-TECH
               </p>
             </div>
