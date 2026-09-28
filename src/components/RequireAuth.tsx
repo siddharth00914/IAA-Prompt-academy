@@ -1,34 +1,45 @@
 import { useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router';
 import TaxiwayLoader from '@/components/TaxiwayLoader';
+import { useAdminAccess } from '@/lib/admin';
+import { useAdminViewMode } from '@/lib/admin-view';
 import { authClient } from '@/lib/auth-client';
 import { retryProgressHydration } from '@/lib/progress-api';
 import { useLegacyImportStatus, useProgressSyncStatus } from '@/lib/progress';
 
 /**
- * Guards learner routes. Unauthenticated visitors are sent to /login with the
- * requested location preserved so login can return them after sign-in.
- * Authenticated visitors wait for GET /api/progress + legacy import before mount
- * (so Dashboard checkIn cannot race the import).
+ * Guards authenticated routes. Unauthenticated visitors are sent to /login.
+ * Learners wait for progress hydration. IT Admins skip that wait on the Admin
+ * Dashboard; in Academy view they hydrate like learners.
  */
 export default function RequireAuth() {
   const location = useLocation();
-  const { data: session, isPending } = authClient.useSession();
+  const { data: session, isPending, isSigningOut } = authClient.useSession();
+  const { status: adminStatus } = useAdminAccess();
+  const { isLearnerView } = useAdminViewMode();
   const syncStatus = useProgressSyncStatus();
   const legacyImportStatus = useLegacyImportStatus();
   const [retrying, setRetrying] = useState(false);
+  const isItAdmin = adminStatus === 'authorized';
+  const skipLearnerProgress = isItAdmin && !isLearnerView;
 
-  // Import failure UI is owned by ProgressHydrator (keeps localStorage intact).
-  if (session?.user && legacyImportStatus === 'error') {
+  if (isSigningOut) {
+    return (
+      <div className="flex min-h-[60dvh] items-center justify-center">
+        <TaxiwayLoader label="SIGNING OFF" />
+      </div>
+    );
+  }
+
+  if (session?.user && !skipLearnerProgress && legacyImportStatus === 'error') {
     return null;
   }
 
-  // Treat `anonymous` as loading when a session exists: ProgressHydrator's
-  // effect hasn't called beginServerHydration yet on this paint.
-  // Also wait through legacy import before mounting learner pages / checkIn.
   if (
     isPending ||
+    (session?.user && adminStatus === 'loading') ||
     (session?.user &&
+      !skipLearnerProgress &&
       (syncStatus === 'loading' ||
         syncStatus === 'anonymous' ||
         legacyImportStatus === 'pending' ||
@@ -43,6 +54,10 @@ export default function RequireAuth() {
 
   if (!session?.user) {
     return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  if (skipLearnerProgress) {
+    return <Outlet />;
   }
 
   if (syncStatus === 'error') {

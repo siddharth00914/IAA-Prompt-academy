@@ -3,6 +3,9 @@ import { Link, NavLink, useLocation } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, Lock, Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { IT_ADMIN_LABEL, useAdminAccess } from '@/lib/admin';
+import { useAdminViewMode, useAdminViewSwitcher } from '@/lib/admin-view';
+import { authClient } from '@/lib/auth-client';
 import { useProgress, isGateUnlocked } from '@/lib/progress';
 import AuthControls from '@/components/AuthControls';
 import SplitFlap from '@/components/SplitFlap';
@@ -40,6 +43,15 @@ function navLinkClass({ isActive }: { isActive: boolean }) {
  */
 export default function Navbar() {
   const progress = useProgress();
+  const { data: session, isPending } = authClient.useSession();
+  const { status: adminStatus } = useAdminAccess();
+  const { isLearnerView, setMode } = useAdminViewMode();
+  const { goLearnerAcademy, goAdminDashboard } = useAdminViewSwitcher();
+  const isItAdmin = adminStatus === 'authorized';
+  const hideLearnerChrome =
+    isPending ||
+    (Boolean(session?.user) && adminStatus === 'loading') ||
+    (isItAdmin && !isLearnerView);
   const location = useLocation();
   const [gatesOpen, setGatesOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -137,7 +149,11 @@ export default function Navbar() {
       <header className="fixed inset-x-0 top-0 z-50 h-16 border-b border-line bg-paper/90 backdrop-blur">
         <div className="mx-auto flex h-full max-w-[1180px] items-center justify-between gap-4 px-6">
           {/* brand */}
-          <Link to="/" className="flex min-w-0 items-center gap-3" aria-label="IAA Prompt Academy — home">
+          <Link
+            to={isItAdmin && !isLearnerView ? '/admin' : '/'}
+            className="flex min-w-0 items-center gap-3"
+            aria-label="IAA Prompt Academy — home"
+          >
             <img src="/logo-iaa-academy.svg" alt="" className="h-8 w-8 shrink-0" />
             <span className="hidden min-w-0 flex-col sm:flex">
               <span className="truncate font-sans text-[15px] font-extrabold leading-none tracking-tight text-ink-900">
@@ -150,6 +166,18 @@ export default function Navbar() {
           </Link>
 
           {/* center links */}
+          {hideLearnerChrome ? (
+            isItAdmin ? (
+            <nav className="hidden items-center gap-6 lg:flex" aria-label="Primary">
+              <button type="button" onClick={goLearnerAcademy} className={navLinkClass({ isActive: false })}>
+                Academy
+              </button>
+              <NavLink to="/admin" className={navLinkClass} onClick={() => setMode('admin')}>
+                {IT_ADMIN_LABEL}
+              </NavLink>
+            </nav>
+            ) : null
+          ) : (
           <nav className="hidden items-center gap-6 lg:flex" aria-label="Primary">
             <NavLink to="/journey" className={navLinkClass}>
               Journey
@@ -215,9 +243,11 @@ export default function Navbar() {
               </NavLink>
             ))}
           </nav>
+          )}
 
           {/* right cluster */}
           <div className="flex items-center gap-3">
+            {hideLearnerChrome ? null : (
             <Link
               to="/journey"
               className="flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1.5"
@@ -228,6 +258,7 @@ export default function Navbar() {
                 {progress.miles} MILES
               </span>
             </Link>
+            )}
             <AuthControls variant="desktop" />
             <button
               ref={menuButtonRef}
@@ -273,6 +304,41 @@ export default function Navbar() {
               </button>
             </div>
             <nav className="relative flex-1 overflow-y-auto px-6 py-6" aria-label="Mobile">
+              {hideLearnerChrome ? (
+                isItAdmin ? (
+                <div className="flex flex-col">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      goLearnerAcademy();
+                      setMobileOpen(false);
+                    }}
+                    className="flex w-full items-baseline gap-4 border-b border-tarmac-800 py-4 text-left"
+                  >
+                    <span className="font-mono text-[12px] text-fog-500">01</span>
+                    <span className="font-mono text-2xl font-semibold tracking-[0.08em] text-fog-100">
+                      <SplitFlap text="ACADEMY" startDelay={150} stagger={35} />
+                    </span>
+                    <span className="ml-auto font-mono text-glow-amber">→</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      goAdminDashboard();
+                      setMobileOpen(false);
+                    }}
+                    className="flex w-full items-baseline gap-4 border-b border-tarmac-800 py-4 text-left"
+                  >
+                    <span className="font-mono text-[12px] text-fog-500">02</span>
+                    <span className="font-mono text-2xl font-semibold tracking-[0.08em] text-fog-100">
+                      <SplitFlap text="IT ADMIN" startDelay={240} stagger={35} />
+                    </span>
+                    <span className="ml-auto font-mono text-glow-amber">→</span>
+                  </button>
+                </div>
+                ) : null
+              ) : (
+                <>
               {[
                 { to: '/', label: 'HOME' },
                 { to: '/journey', label: 'JOURNEY' },
@@ -308,12 +374,16 @@ export default function Navbar() {
                   ) : null}
                 </Link>
               ))}
+                </>
+              )}
             </nav>
             <div className="relative border-t border-tarmac-700 px-6 py-4">
               <AuthControls variant="mobile" onNavigate={() => setMobileOpen(false)} />
+              {hideLearnerChrome ? null : (
               <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.14em] text-fog-500">
                 {progress.miles} MILES · PRESENTED BY WINTHROP-TECH
               </p>
+              )}
             </div>
           </motion.div>
         ) : null}

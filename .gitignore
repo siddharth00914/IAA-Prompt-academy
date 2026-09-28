@@ -6,3 +6,6 @@ cursor-generated/
 .DS_Store
 .cursor/
 !.env.example
+.firebase/
+*-debug.log
+functions/lib/

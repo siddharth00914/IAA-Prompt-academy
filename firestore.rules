@@ -1,0 +1,244 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function signedInProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isActiveAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && signedInProfile().role == 'admin'
+        && (signedInProfile().active == true || signedInProfile().status == 'active');
+    }
+
+    function isNonEmptyString(value) {
+      return value is string && value.size() > 0;
+    }
+
+    // Must match src/lib/learning-session-engine.ts MAX_HEARTBEAT_SECONDS (120).
+    function maxActivityIncrement() {
+      return 120;
+    }
+
+    function isValidProgressState(value) {
+      return value is map
+        && value.keys().hasAll(['v', 'gates', 'miles', 'wings', 'lab', 'pledgeSigned', 'certifiedAt', 'ledger'])
+        && value.v is int
+        && value.gates is map
+        && value.miles is number
+        && value.wings is list
+        && value.lab is map
+        && value.pledgeSigned is bool
+        && value.ledger is list
+        && (value.certifiedAt == null || value.certifiedAt is string);
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isActiveAdmin();
+
+      // Learners may create only their own profile. Role/status are locked.
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly([
+          'firstName',
+          'lastName',
+          'displayName',
+          'email',
+          'role',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.role == 'learner'
+        && request.resource.data.status == 'active'
+        && request.resource.data.email is string
+        && request.resource.data.firstName is string
+        && request.resource.data.lastName is string
+        && request.resource.data.displayName is string
+        && request.resource.data.email.size() > 0
+        && request.resource.data.firstName.size() > 0
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.displayName
+          == request.resource.data.firstName
+            + (request.resource.data.lastName.size() > 0
+              ? ' ' + request.resource.data.lastName
+              : '')
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      allow update, delete: if false;
+    }
+
+    match /learnerProgress/{uid} {
+      allow read: if isOwner(uid) || isActiveAdmin();
+      allow create, update: if isOwner(uid);
+      allow delete: if false;
+    }
+
+    match /learnerActivity/{uid} {
+      allow read: if isOwner(uid) || isActiveAdmin();
+
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'totalActiveSeconds',
+          'lastActiveAt',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.uid == uid
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.totalActiveSeconds is number
+        && request.resource.data.totalActiveSeconds >= 0
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      allow update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'totalActiveSeconds',
+          'lastActiveAt',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.totalActiveSeconds is number
+        && request.resource.data.totalActiveSeconds >= resource.data.totalActiveSeconds
+        && request.resource.data.totalActiveSeconds <= resource.data.totalActiveSeconds + maxActivityIncrement()
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+
+      allow delete: if false;
+
+      match /sessions/{sessionId} {
+        allow read: if isOwner(uid) || isActiveAdmin();
+
+        allow create: if isOwner(uid)
+          && request.resource.data.keys().hasOnly([
+            'uid',
+            'startedAt',
+            'lastHeartbeatAt',
+            'endedAt',
+            'activeSeconds',
+            'status',
+            'currentRoute',
+            'gateId'
+          ])
+          && request.resource.data.uid == uid
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.activeSeconds is number
+          && request.resource.data.activeSeconds == 0
+          && request.resource.data.status == 'active'
+          && isNonEmptyString(request.resource.data.currentRoute)
+          && (request.resource.data.gateId == null || request.resource.data.gateId is string)
+          && request.resource.data.endedAt == null
+          && request.resource.data.startedAt == request.time
+          && request.resource.data.lastHeartbeatAt == request.time;
+
+        allow update: if isOwner(uid)
+          && resource.data.status == 'active'
+          && request.resource.data.keys().hasOnly([
+            'uid',
+            'startedAt',
+            'lastHeartbeatAt',
+            'endedAt',
+            'activeSeconds',
+            'status',
+            'currentRoute',
+            'gateId'
+          ])
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.startedAt == resource.data.startedAt
+          && request.resource.data.activeSeconds is number
+          && request.resource.data.activeSeconds >= resource.data.activeSeconds
+          && request.resource.data.activeSeconds <= resource.data.activeSeconds + maxActivityIncrement()
+          && request.resource.data.status in ['active', 'ended']
+          && isNonEmptyString(request.resource.data.currentRoute)
+          && (request.resource.data.gateId == null || request.resource.data.gateId is string)
+          && request.resource.data.lastHeartbeatAt == request.time
+          && (
+            request.resource.data.status == 'active'
+              ? request.resource.data.endedAt == null
+              : request.resource.data.endedAt == request.time
+          );
+
+        allow delete: if false;
+      }
+    }
+
+    match /progressHistory/{uid} {
+      allow read: if isOwner(uid) || isActiveAdmin();
+
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'baselineRevision',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.uid == uid
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.baselineRevision is int
+        && request.resource.data.baselineRevision >= 0
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      allow update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'baselineRevision',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.baselineRevision == resource.data.baselineRevision
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+
+      allow delete: if false;
+
+      match /revisions/{revisionId} {
+        allow read: if isOwner(uid) || isActiveAdmin();
+
+        allow create: if isOwner(uid)
+          && request.resource.data.keys().hasOnly([
+            'uid',
+            'revision',
+            'state',
+            'changedAt',
+            'source',
+            'isBaseline'
+          ])
+          && request.resource.data.uid == uid
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.revision is int
+          && request.resource.data.revision >= 0
+          && revisionId == ('r' + string(request.resource.data.revision))
+          && isValidProgressState(request.resource.data.state)
+          && request.resource.data.source in ['baseline', 'save', 'legacy-import']
+          && request.resource.data.isBaseline is bool
+          && request.resource.data.changedAt == request.time;
+
+        allow update, delete: if false;
+      }
+    }
+
+    // Legacy collection — app no longer reads or writes these docs.
+    match /userManagementRequests/{requestId} {
+      allow read, write: if false;
+    }
+  }
+}

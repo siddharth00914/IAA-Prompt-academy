@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { useAdminAccess } from '@/lib/admin';
+import { useAdminViewMode } from '@/lib/admin-view';
 import { authClient } from '@/lib/auth-client';
 import { useToast } from '@/components/Toast';
 import {
@@ -26,12 +28,15 @@ import {
  * debounced PUT saver. Does not write localStorage while server-backed.
  */
 export default function ProgressHydrator() {
-  const { data: session, isPending } = authClient.useSession();
+  const { data: session, isPending, isSigningOut } = authClient.useSession();
+  const { status: adminStatus } = useAdminAccess();
+  const { isLearnerView } = useAdminViewMode();
   const { showToast } = useToast();
   const fetchGen = useRef(0);
   const saveStatus = useProgressSaveStatus();
   const legacyImportStatus = useLegacyImportStatus();
   const [importRetrying, setImportRetrying] = useState(false);
+  const skipLearnerProgress = adminStatus === 'authorized' && !isLearnerView;
 
   useEffect(() => {
     installProgressSaver();
@@ -50,7 +55,16 @@ export default function ProgressHydrator() {
   useEffect(() => {
     if (isPending) return;
 
-    if (!session?.user?.id) {
+    if (isSigningOut || !session?.user?.id) {
+      fetchGen.current += 1;
+      clearProgressMemory();
+      return;
+    }
+
+    if (adminStatus === 'loading') return;
+
+    if (skipLearnerProgress) {
+      fetchGen.current += 1;
       clearProgressMemory();
       return;
     }
@@ -77,7 +91,7 @@ export default function ProgressHydrator() {
         failServerHydration();
       }
     })();
-  }, [isPending, session?.user?.id]);
+  }, [isPending, session?.user?.id, adminStatus, isSigningOut, skipLearnerProgress]);
 
   const onRetryImport = async () => {
     if (!session?.user?.id || importRetrying) return;
@@ -88,6 +102,8 @@ export default function ProgressHydrator() {
       setImportRetrying(false);
     }
   };
+
+  if (skipLearnerProgress) return null;
 
   if (legacyImportStatus === 'error') {
     return (

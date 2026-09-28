@@ -1,9 +1,12 @@
 import { Link } from 'react-router';
 import { motion } from 'framer-motion';
 import { GATES_NAV } from '@/components/Navbar';
+import { useAdminAccess } from '@/lib/admin';
+import { useAdminViewMode } from '@/lib/admin-view';
+import { authClient } from '@/lib/auth-client';
 
 const PROGRAM_LINKS = [
-  { to: '/', label: 'About' },
+  { to: '/', label: 'Home' },
   { to: '/manual', label: 'Flight Manual' },
   { to: '/safety', label: 'Safety' },
   { to: '/lab', label: 'Prompt Lab' },
@@ -14,6 +17,15 @@ const PROGRAM_LINKS = [
  * on top; Program / Gates columns; Winthrop-Tech credit; fine print.
  */
 export default function Footer() {
+  const { data: session, isPending } = authClient.useSession();
+  const { status: adminStatus } = useAdminAccess();
+  const { isLearnerView } = useAdminViewMode();
+  const isItAdmin = adminStatus === 'authorized';
+  const hideLearnerChrome =
+    isPending ||
+    (Boolean(session?.user) && adminStatus === 'loading') ||
+    (isItAdmin && !isLearnerView);
+
   return (
     <footer className="relative overflow-hidden bg-tarmac-950 text-fog-300">
       <div className="grain-night" aria-hidden />
@@ -37,7 +49,11 @@ export default function Footer() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.2 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="relative mx-auto grid max-w-[1180px] gap-10 px-6 py-16 md:grid-cols-[1.4fr_1fr_1fr_1.2fr]"
+        className={
+          hideLearnerChrome
+            ? 'relative mx-auto grid max-w-[1180px] gap-6 px-6 py-8 md:grid-cols-[1.6fr_1.2fr]'
+            : 'relative mx-auto grid max-w-[1180px] gap-10 px-6 py-16 md:grid-cols-[1.4fr_1fr_1fr_1.2fr]'
+        }
       >
         {/* brand */}
         <div>
@@ -58,6 +74,8 @@ export default function Footer() {
           </p>
         </div>
 
+        {hideLearnerChrome ? null : (
+          <>
         {/* Program */}
         <nav aria-label="Program">
           <p className="label text-fog-500">PROGRAM</p>
@@ -86,6 +104,8 @@ export default function Footer() {
             ))}
           </ul>
         </nav>
+          </>
+        )}
 
         {/* credit */}
         <div>
